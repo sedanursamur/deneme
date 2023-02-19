@@ -232,7 +232,6 @@ Usage without proper license is prohibited.
 			return location;
 		},
 		getSearchData: function getSearchData(id, value) {
-			debugger;
 			var found = [];
 			this.data.each(function (obj) {
 				var text = this.config.templateName(obj);
@@ -243,13 +242,12 @@ Usage without proper license is prohibited.
 			return found;
 		},
 		showSearchResults: function showSearchResults(value) {
-			debugger;
 			var id = this.getCursor();
 			if (this.config.handlers.search) {
-				loader.loadAutoCompleteData(this, this.config.handlers.search, id, value);
+				loader.loadSearchData(this, this.config.handlers.search, id, value);
 			} else {
 				var data = this.getSearchData(id, value);
-				loader.parseAutoCompleteData(this, data);
+				loader.parseSearchData(this, data);
 			}
 		},
 		hideSearchResults: function hideSearchResults(skipRefresh) {
@@ -1103,8 +1101,6 @@ Usage without proper license is prohibited.
 	exports.getDynMode = getDynMode;
 	exports.loadSearchData = loadSearchData;
 	exports.parseSearchData = parseSearchData;
-	exports.loadAutoCompleteData = loadAutoCompleteData;
-	exports.parseAutoCompleteData = parseAutoCompleteData;
 	
 	var _sort = __webpack_require__(22);
 	
@@ -1240,7 +1236,6 @@ Usage without proper license is prohibited.
 		return null;
 	}
 	function loadSearchData(view, url, id, value) {
-		debugger;
 		var params = { action: "search", source: id, text: value };
 		if (view.callEvent("onBeforeSearchRequest", [id, params])) {
 			var callback = {
@@ -1258,7 +1253,6 @@ Usage without proper license is prohibited.
 		}
 	}
 	function parseSearchData(view, data) {
-		debugger;
 		view.callEvent("onShowSearchResults", []);
 		view.$searchResults = true;
 		var cell = view.$$(view.config.mode);
@@ -1268,47 +1262,6 @@ Usage without proper license is prohibited.
 			cell.parse(data);
 		}
 	}
-
-
-
-	function loadAutoCompleteData(view, url, id, value) {
-		debugger;
-		var params = { action: "arama", source: id, text: value };
-		if (view.callEvent("onBeforeSearchRequest", [id, params])) {
-			var callback = {
-				success: function success(text, response) {
-					var data = view.data.driver.toObject(text, response);
-					parseAutoCompleteData(view, data);
-				}
-			};
-			if (url.load) return url.load(null, callback, params);
-		}
-	}
-
-	function parseAutoCompleteData(view, data) {
-		var suggest = view.config.suggest;
-		if (suggest && suggest.data) {
-			var matches = [];
-			for (var i = 0; i < data.length; i++) {
-				var item = data[i];
-				for (var j = 0; j < suggest.data.length; j++) {
-					var term = suggest.data[j];
-					if (item.text.indexOf(term) === 0) {
-						matches.push(item.text);
-						break;
-					}
-				}
-			}
-			view.define("data", matches);
-			view.refresh();
-		}
-	}
-
-
-
-
-
-
 
 /***/ }),
 /* 22 */
@@ -1603,24 +1556,7 @@ Usage without proper license is prohibited.
 			"forward": forward.init(view),
 			"up": up.init(view),
 			"path": path.init(view),
-			//"search": search.init(view),
-			
-			//"arama": {
-			//	view: "text" // deðiþtirildi
-			
-			//}
-			//,
-			"arama": {
-				view: "combo",
-				suggest: {
-					data: ["dosya1.txt", "dosya2.txt", "klasor1", "klasor2"]
-				},
-				on: {
-					onTimedKeyPress: function () {
-						loadAutoCompleteData(this, {}, this.config.id, this.getValue());
-					}
-				}
-			},
+			"search": search.init(view),
 			"bodyLayout": bodyLayout.init(view),
 			"treeLayout": treeLayout.init(view),
 			"sidePanel": sidePanel.init(view),
@@ -1651,33 +1587,9 @@ Usage without proper license is prohibited.
 				config: columns.init(view)
 			}
 		};
-		//// search öðesine data tanýmlamasýný eklemek isterseniz burada yapabilirsiniz
-		//var suggest = search.init(view);
-		//var data = [
-		//	{ id: 1, value: "Apple" },
-		//	{ id: 2, value: "Banana" },
-		//	{ id: 3, value: "Cherry" }
-		//];
-		//suggest.define("data", data);
-
 	
 		changeStructure(view, config);
 	}
-	//function init(view) {
-	//	view.structure = {
-	//		"search": {
-	//			view: "suggest", // deðiþtirildi
-	//			body: {
-	//				view: "list",
-	//				data: ["suggestion 1", "suggestion 2", "suggestion 3"]
-	//			}
-	//		},
-	//		// ...
-	//	};
-
-	//	return view;
-	//}
-
 	
 	function getViews(view, struct, config) {
 		var cells,
@@ -2368,11 +2280,11 @@ Usage without proper license is prohibited.
 			return ready(view);
 		});
 	
-		return { view: "arama", gravity: 0.3, minWidth: 300, css: "webix_fmanager_search", icon: " webix_fmanager_icon" };
+		return { view: "search", gravity: 0.3, minWidth: 80, css: "webix_fmanager_search", icon: " webix_fmanager_icon" };
 	}
 	
 	function ready(view) {
-		var search = view.$$("arama");
+		var search = view.$$("search");
 		if (search) {
 			view.attachEvent("onHideSearchResults", function () {
 				search.setValue("");
@@ -2581,7 +2493,7 @@ Usage without proper license is prohibited.
 			paddingX: 10,
 			paddingY: 5,
 			margin: 7,
-			cols: ["menu", { id: "menuSpacer", width: 75 }, { margin: 0, cols: ["back", "forward"] }, "up", "path", "arama", "modes"]
+			cols: ["menu", { id: "menuSpacer", width: 75 }, { margin: 0, cols: ["back", "forward"] }, "up", "path", "search", "modes"]
 		};
 	}
 
