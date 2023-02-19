@@ -232,6 +232,7 @@ Usage without proper license is prohibited.
 			return location;
 		},
 		getSearchData: function getSearchData(id, value) {
+			debugger;
 			var found = [];
 			this.data.each(function (obj) {
 				var text = this.config.templateName(obj);
@@ -242,12 +243,13 @@ Usage without proper license is prohibited.
 			return found;
 		},
 		showSearchResults: function showSearchResults(value) {
+			debugger;
 			var id = this.getCursor();
 			if (this.config.handlers.search) {
-				loader.loadSearchData(this, this.config.handlers.search, id, value);
+				loader.loadAutoCompleteData(this, this.config.handlers.search, id, value);
 			} else {
 				var data = this.getSearchData(id, value);
-				loader.parseSearchData(this, data);
+				loader.parseAutoCompleteData(this, data);
 			}
 		},
 		hideSearchResults: function hideSearchResults(skipRefresh) {
@@ -620,6 +622,95 @@ Usage without proper license is prohibited.
 		},
 		defaults: defaults.values
 	}, webix.ProgressBar, webix.IdSpace, webix.ui.layout, webix.TreeDataMove, webix.TreeDataLoader, webix.DataLoader, webix.EventSystem, webix.Settings);
+
+		webix.protoUI({
+			name: "search_autocomplete",
+			$init: function (config) {
+				config.suggest = {
+					view: "list",
+					data: [],
+					template: "#name#",
+				};
+				this.$ready.push(this._prepareAutocomplete);
+			},
+			_prepareAutocomplete: function () {
+				var config = this.config;
+				var list = $$(config.suggest);
+
+				list.attachEvent("onItemClick", function (id) {
+					var value = this.getItem(id).name;
+					config.value = value;
+					this.setValue(value);
+					this.search();
+				});
+
+				this.attachEvent("onTimedKeyPress", function (code, e) {
+					var value = this.getValue().toLowerCase();
+					if (value) {
+						var data = [];
+						for (var i = 0; i < config.options.length; i++) {
+							var item = config.options[i];
+							if (item.name.toLowerCase().indexOf(value) === 0) {
+								data.push(item);
+							}
+						}
+						list.clearAll();
+						list.parse(data);
+						list.show();
+					} else {
+						list.hide();
+					}
+				});
+			},
+		}, webix.ui.search);
+
+		webix.protoUI({
+			name: "filemanager",
+			defaults: {
+				searchAutocomplete: true,
+				searchDelay: 500,
+			},
+			$init: function (config) {
+				config.suggest = {
+					view: "list",
+					data: [],
+					template: "#name#",
+				};
+				config.search = {
+					view: "search_autocomplete",
+					on: {
+						onSearchIconClick: function () {
+							this.$view.querySelector("input").focus();
+						},
+						onSearch: function (value) {
+							this.$scope.$$("files").clearAll();
+							this.$scope.loadSearchData(this, this.config.url, this.$scope.getRoot().id, value);
+						},
+					},
+				};
+				this.$ready.push(this._prepareFileManager);
+			},
+			_prepareFileManager: function () {
+				if (this.config.searchAutocomplete) {
+					var search = this.$$("search");
+					search.config.options = this._getAutocompleteData();
+					search.define("options", this._getAutocompleteData());
+				}
+			},
+			_getAutocompleteData: function () {
+				var data = [];
+				this.data.each(function (obj) {
+					if (obj.type !== "folder") {
+						data.push({
+							id: obj.id,
+							name: obj.name,
+						});
+					}
+				});
+				return data;
+			},
+		}, webix.ui.filemanager);
+
 
 /***/ }),
 /* 1 */,
@@ -1101,6 +1192,8 @@ Usage without proper license is prohibited.
 	exports.getDynMode = getDynMode;
 	exports.loadSearchData = loadSearchData;
 	exports.parseSearchData = parseSearchData;
+	exports.loadAutoCompleteData = loadAutoCompleteData;
+	exports.parseAutoCompleteData = parseAutoCompleteData;
 	
 	var _sort = __webpack_require__(22);
 	
@@ -1236,6 +1329,7 @@ Usage without proper license is prohibited.
 		return null;
 	}
 	function loadSearchData(view, url, id, value) {
+		debugger;
 		var params = { action: "search", source: id, text: value };
 		if (view.callEvent("onBeforeSearchRequest", [id, params])) {
 			var callback = {
@@ -1253,6 +1347,7 @@ Usage without proper license is prohibited.
 		}
 	}
 	function parseSearchData(view, data) {
+		debugger;
 		view.callEvent("onShowSearchResults", []);
 		view.$searchResults = true;
 		var cell = view.$$(view.config.mode);
@@ -1262,6 +1357,56 @@ Usage without proper license is prohibited.
 			cell.parse(data);
 		}
 	}
+
+
+	function loadAutoCompleteData(view, url, id, value, callback) {
+		var params = { action: "search", source: id, text: value };
+		if (view.callEvent("onBeforeSearchRequest", [id, params])) {
+			var dataCallback = {
+				success: function success(text, response) {
+					view.hideProgress();
+					var data = view.data.driver.toObject(text, response);
+					var parsedData = parseAutoCompleteData(data);
+					view.$searchValue = value;
+					callback(parsedData);
+				},
+				error: function error() {
+					view.hideProgress();
+				}
+			};
+			if (url.load) return url.load(null, dataCallback, params);
+		}
+	}
+
+	function parseAutoCompleteData(data) {
+		var parsedData = [];
+		for (var i = 0; i < data.length; i++) {
+			var item = data[i];
+			if (item.type === "file") {
+				parsedData.push({
+					value: item.value,
+					id: item.id,
+					css: item.css || "",
+					type: "file"
+				});
+			} else if (item.type === "dir") {
+				parsedData.push({
+					value: item.value,
+					id: item.id,
+					css: item.css || "",
+					type: "dir"
+				});
+			}
+		}
+		return parsedData;
+	}
+
+
+
+
+
+
+
 
 /***/ }),
 /* 22 */
@@ -1556,7 +1701,23 @@ Usage without proper license is prohibited.
 			"forward": forward.init(view),
 			"up": up.init(view),
 			"path": path.init(view),
-			"search": search.init(view),
+			//"search": search.init(view),
+			
+			//"arama": {
+			//	view: "text" // değiştirildi
+			
+			//}
+			//,
+			"search": {
+				view: "combo",
+				suggest: {
+					data: function (text) {
+						var data = webix.ajax().sync().get("autocomplete.php?text=" + text);
+						var parsedData = JSON.parse(data.responseText);
+						return parsedData;
+					}
+				}
+			},
 			"bodyLayout": bodyLayout.init(view),
 			"treeLayout": treeLayout.init(view),
 			"sidePanel": sidePanel.init(view),
@@ -1587,9 +1748,33 @@ Usage without proper license is prohibited.
 				config: columns.init(view)
 			}
 		};
+		//// search öğesine data tanımlamasını eklemek isterseniz burada yapabilirsiniz
+		//var suggest = search.init(view);
+		//var data = [
+		//	{ id: 1, value: "Apple" },
+		//	{ id: 2, value: "Banana" },
+		//	{ id: 3, value: "Cherry" }
+		//];
+		//suggest.define("data", data);
+
 	
 		changeStructure(view, config);
 	}
+	//function init(view) {
+	//	view.structure = {
+	//		"search": {
+	//			view: "suggest", // değiştirildi
+	//			body: {
+	//				view: "list",
+	//				data: ["suggestion 1", "suggestion 2", "suggestion 3"]
+	//			}
+	//		},
+	//		// ...
+	//	};
+
+	//	return view;
+	//}
+
 	
 	function getViews(view, struct, config) {
 		var cells,
@@ -2280,11 +2465,11 @@ Usage without proper license is prohibited.
 			return ready(view);
 		});
 	
-		return { view: "search", gravity: 0.3, minWidth: 80, css: "webix_fmanager_search", icon: " webix_fmanager_icon" };
+		return { view: "arama", gravity: 0.3, minWidth: 300, css: "webix_fmanager_search", icon: " webix_fmanager_icon" };
 	}
 	
 	function ready(view) {
-		var search = view.$$("search");
+		var search = view.$$("arama");
 		if (search) {
 			view.attachEvent("onHideSearchResults", function () {
 				search.setValue("");
@@ -2493,7 +2678,7 @@ Usage without proper license is prohibited.
 			paddingX: 10,
 			paddingY: 5,
 			margin: 7,
-			cols: ["menu", { id: "menuSpacer", width: 75 }, { margin: 0, cols: ["back", "forward"] }, "up", "path", "search", "modes"]
+			cols: ["menu", { id: "menuSpacer", width: 75 }, { margin: 0, cols: ["back", "forward"] }, "up", "path", "arama", "modes"]
 		};
 	}
 
@@ -2881,6 +3066,18 @@ Usage without proper license is prohibited.
 			if (view._uploader) view._uploader.fileDialog();
 		}
 	}
+	webix.ready(function () {
+		webix.ui({
+			view: "combo",
+			suggest: {
+				body: {
+					dataFeed: function (text) {
+						loadAutoCompleteData($$("files"), "suggestion", text);
+					}
+				}
+			}
+		});
+	});
 
 /***/ })
 /******/ ]);
