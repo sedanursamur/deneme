@@ -7,9 +7,12 @@ Usage without proper license is prohibited.
 */
 
 
-<link rel="stylesheet" href="https://code.jquery.com/ui/1.13.0/themes/smoothness/jquery-ui.css">
-	<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-	<script src="https://code.jquery.com/ui/1.13.0/jquery-ui.min.js"></script>
+<head>
+  <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+  <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+  <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+</head>
+
 
 
 
@@ -1246,7 +1249,7 @@ Usage without proper license is prohibited.
 		return null;
 	}
 	//function loadSearchData(view, url, id, value) {
-	//	//sunucudan arama önerilerini yükler.
+	//	//sunucudan arama Ã¶nerilerini yÃ¼kler.
 
 	//	var params = { action: "search", source: id, text: value };
 	//	if (view.callEvent("onBeforeSearchRequest", [id, params])) {
@@ -1265,7 +1268,7 @@ Usage without proper license is prohibited.
 	//	}
 	//}
 	//function parseSearchData(view, data) {
-	//	// sunucudan gelen arama önerilerini ayrıştırır ve bir dizi olarak döndürür.
+	//	// sunucudan gelen arama Ã¶nerilerini ayrÃ½Ã¾tÃ½rÃ½r ve bir dizi olarak dÃ¶ndÃ¼rÃ¼r.
 	//	view.callEvent("onShowSearchResults", []);
 	//	view.$searchResults = true;
 	//	var cell = view.$$(view.config.mode);
@@ -1569,7 +1572,7 @@ Usage without proper license is prohibited.
 			"forward": forward.init(view),
 			"up": up.init(view),
 			"path": path.init(view),
-			"search": search.init(view),//kullanıcının arama yaptığı anda tetiklenir ve arama sonuçlarını alır. Sonuçları bir tablo olarak gösterir ve seçilen dosyayı açar.
+			"search": search.init(view),//kullanÃ½cÃ½nÃ½n arama yaptÃ½Ã°Ã½ anda tetiklenir ve arama sonuÃ§larÃ½nÃ½ alÃ½r. SonuÃ§larÃ½ bir tablo olarak gÃ¶sterir ve seÃ§ilen dosyayÃ½ aÃ§ar.
 			"bodyLayout": bodyLayout.init(view),
 			"treeLayout": treeLayout.init(view),
 			"sidePanel": sidePanel.init(view),
